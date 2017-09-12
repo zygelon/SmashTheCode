@@ -1,0 +1,6 @@
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\bin\Debug\SmashTheCode.exe.config
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\bin\Debug\SmashTheCode.exe
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\bin\Debug\SmashTheCode.pdb
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\obj\Debug\SmashTheCode.csprojResolveAssemblyReference.cache
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\obj\Debug\SmashTheCode.exe
+C:\Users\zygel\Documents\Visual Studio 2017\Projects\SmashTheCode\SmashTheCode\obj\Debug\SmashTheCode.pdb
