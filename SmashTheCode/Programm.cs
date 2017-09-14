@@ -26,19 +26,18 @@ enum Rotation { Right,Up,Left,Down};
 class Player
 {
     public const int ROWS = 6, COLUMNS = 12;
-    private char[,] grid;
+    private char[,] Grid; 
     private bool isKnownNextBalls;
     public Color[] NextBalls { get; private set; }
     public int Score { get; private set; }
-    public int[] HeightBalls { get; private set; }
+    public int[] HeightBalls;
 
     public Player(Color[] NextBalls=null){
         HeightBalls = new int[ROWS];
         Score = 0;
-        grid = new char[COLUMNS,ROWS];
+        Grid = new char[COLUMNS,ROWS];
         if (NextBalls == null)
         {
-            Console.Error.WriteLine("22222");
             isKnownNextBalls = false;
             this.NextBalls = new Color[8];
         }
@@ -62,12 +61,12 @@ class Player
         Score = int.Parse(Console.ReadLine());
         for (int i = 0; i < COLUMNS; ++i)
         {
+            string s = Console.ReadLine();
             for (int j = 0; j < ROWS; ++j)
             {
-                grid[i, j] = (char)Console.Read();
-                if (HeightBalls[j] == 0 && grid[i, j] != '.') HeightBalls[j] = COLUMNS - i;
+                Grid[i, j] = s[j];
+                if (HeightBalls[j] == 0 && Grid[i, j] != '.') HeightBalls[j] = COLUMNS - i;
             }
-            Console.Read();//ignore end of line
         }
     }
     public void ShowInputInformation()
@@ -87,9 +86,24 @@ class Player
         for (int i = 0; i < COLUMNS; ++i)
         {
             for (int j = 0; j < ROWS; ++j)
-                Console.Error.Write(grid[i, j] + " ");
+                Console.Error.Write(Grid[i, j] + " ");
             Console.Error.WriteLine();
         }
+    }
+    public char[,] GetGridCopy()
+    {
+        char[,] retGrid=new char[COLUMNS,ROWS];
+        for (int i = 0; i < COLUMNS; ++i)
+            for (int j = 0; j < ROWS; ++j)
+                retGrid[i, j] = Grid[i, j];
+        return retGrid;
+    }
+
+    public int[] GetHeightBallsCopy()
+    {
+        int[] retHeightBalls = new int[ROWS];
+        HeightBalls.CopyTo(retHeightBalls, 0);
+        return retHeightBalls;
     }
 }
     //b - ощичено блоков за этот ход, cp=chain power
@@ -100,24 +114,69 @@ class Player
 class Simulate
 {
     private const int ROWS = 6, COLUMNS = 12;
+
     char[,] currentGrid;
+    int[] HeightBalls { get; set; }
     int B, CP, CB, GB;
-    Simulate(char[,] currentGrid)
+    public Simulate(char[,] currentGrid,int[] HeightBalls)
     {
+        this.HeightBalls = HeightBalls;
+        this.currentGrid = currentGrid;
         this.currentGrid = currentGrid;
         B = 0; CP = 0; CB = 0; GB = 0;
     }
-    void SimulateMove(int x,Rotation rot)
+    public void SimulateMove(Color ball, int x, Rotation rot)
     {
-        if(x==0 && rot==Rotation.Left || x==ROWS-1 && rot==Rotation.Right)
+        if (x == 0 && rot == Rotation.Left || x == ROWS - 1 && rot == Rotation.Right)
         {
             Console.Error.WriteLine("A ball isn't in the Grid");
             return;
+        }
+        switch (rot)
+        {
+            case Rotation.Down:
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
+                ++HeightBalls[x];
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                ++HeightBalls[x];
+                break;
+            case Rotation.Up:
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                ++HeightBalls[x];
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
+                ++HeightBalls[x];
+                break;
+            case Rotation.Left:
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                ++HeightBalls[x];
+                currentGrid[COLUMNS - 1 - HeightBalls[x - 1], x-1] = (char)(ball.b + '0');
+                ++HeightBalls[x - 1];
+                break;
+            case Rotation.Right:
+                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                ++HeightBalls[x];
+                currentGrid[COLUMNS - 1 - HeightBalls[x + 1], x+1] = (char)(ball.b + '0');
+                ++HeightBalls[x + 1];
+                break;
         }
     }
     void FindAndDestroy(int x,int y)
     {
 
+    }
+    public void ShowInformation()
+    {
+        Console.Error.WriteLine("Simulate");
+        for (int i = 0; i < COLUMNS; ++i)
+        {
+            for (int j = 0; j < ROWS; ++j)
+                Console.Error.Write(currentGrid[i, j] + " ");
+            Console.Error.WriteLine();
+        }
+        Console.Error.Write("HeightBalls:");
+        foreach (var el in HeightBalls)
+            Console.Error.Write(el + " ");
+        Console.Error.WriteLine();
     }
 }
     
@@ -126,14 +185,11 @@ class Program {
     static void Main()
     {
         Player me = new Player();
-        while (true)
-        {
-            me.UpdateInput();
-            me.ShowInputInformation();
         Player enemy = new Player(me.NextBalls);
-            enemy.UpdateInput();
-            enemy.ShowInputInformation();
-            Console.WriteLine("0 1");
-        }
+        me.UpdateInput();
+        me.ShowInputInformation();
+        Simulate analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
+        analize.SimulateMove(me.NextBalls[0], 3, Rotation.Up);
+        analize.ShowInformation();
     }
 }
