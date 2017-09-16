@@ -14,7 +14,6 @@ struct Coor
         this.y = y;
     }
 }
-
 struct Color
 {
     public int a, b;
@@ -29,7 +28,6 @@ struct Color
         this.b = b;
     }
 }
-
 class MyStack<T>
 {
     public int Length { get; private set; }
@@ -43,7 +41,7 @@ class MyStack<T>
     }
     public MyStack()
     {
-        Length = 30;
+        Length = 10;
         index = 0;
         stack = new T[Length];
     }
@@ -55,7 +53,7 @@ class MyStack<T>
         Length *= 2;
         stack = newStack;
     }
-    public void Push(T element)
+    public void Add(T element)
     {
         if (index == Length) IncreaseStack();
         stack[index++] = element;
@@ -65,14 +63,23 @@ class MyStack<T>
         if (index == 0) return true;
         return false;
     }
-    public T Pop()
+    public T Last()
     {
         if (index == 0)
         {
             Console.WriteLine("Error: stack is empty");
             return stack[0];
         }
-        return stack[--index];
+        return stack[index-1];
+    }
+    public void Pop()
+    {
+        if (index == 0)
+        {
+            Console.WriteLine("Error: stack is empty");
+        }
+        --index;
+        return;
     }
     public void Show()
     {
@@ -82,16 +89,85 @@ class MyStack<T>
         Console.WriteLine();
     }
 }
+class MyQueue<T>
+{
+    int frontIndex;
+    int backIndex;
+    T[] queue;
+    public int Length { get; private set; }
+
+    public MyQueue()
+    {
+        frontIndex = 0;
+        backIndex = 0;
+        Length = 20;
+        queue = new T[Length];
+    }
+
+    public MyQueue(int Length)
+    {
+        frontIndex = 0;
+        backIndex = 0;
+        this.Length = Length;
+        queue = new T[Length];
+    }
+
+    public bool IsEmpty()
+    {
+        if (frontIndex == backIndex) return true;
+        else return false;
+    }
+
+    public void IncreaseQueue()
+    {
+        T[] newQueue =new T[Length * 2];
+        for (int i = frontIndex; i < backIndex; ++i)
+            newQueue[i - frontIndex] = queue[i];
+        backIndex -= frontIndex;
+        frontIndex = 0;
+        queue = newQueue;
+        Length *= 2;
+    }
+
+    public void Add(T element)
+    {
+        if (backIndex == Length) IncreaseQueue();
+        queue[backIndex++] = element;
+    }
+
+    public T GetFront()
+    {
+        if(backIndex==frontIndex)
+        {
+            Console.Error.WriteLine("ERROR QUEUE. BackIndex==FrontIndex");
+        }
+        return queue[frontIndex];
+    }
+
+    public void PopFront()
+    {
+        frontIndex++;
+    }
+}
+
 enum Rotation { Right,Up,Left,Down};
 
-class Player
+abstract class BaseInformation
 {
     public const int ROWS = 6, COLUMNS = 12;
-    private char[,] Grid; 
+    protected char[,] Grid;
+    protected int[] HeightBalls;
+
+    protected BaseInformation() { }
+    public abstract void ShowInformation();
+}
+
+
+class Player : BaseInformation
+{
     private bool isKnownNextBalls;
     public Color[] NextBalls { get; private set; }
     public int Score { get; private set; }
-    public int[] HeightBalls;
 
     public Player(Color[] NextBalls=null){
         HeightBalls = new int[ROWS];
@@ -130,7 +206,7 @@ class Player
             }
         }
     }
-    public void ShowInformation()
+    public override void ShowInformation()
     {
         Console.Error.Write("Balls:");
         foreach (var t in NextBalls)
@@ -172,18 +248,14 @@ class Player
         //CB is the Color Bonus, depending on how many different color blocks were cleared in the step. It is worth 
         //GB is the Group Bonus, depending on how many blocks are destroyed per group. When several groups have been cleared, the bonuses of all groups are summed. It is worth 
         //The value of(CP + CB + GB) is limited to between 1 and 999 inclusive.
-class Simulate
+class Simulate : BaseInformation
 {
-    private const int ROWS = 6, COLUMNS = 12;
-
-    char[,] currentGrid;
-    int[] HeightBalls { get; set; }
     int B, CP, CB, GB;
-    public Simulate(char[,] currentGrid,int[] HeightBalls)
+    public Simulate(char[,] Grid,int[] HeightBalls)
     {
         this.HeightBalls = HeightBalls;
-        this.currentGrid = currentGrid;
-        this.currentGrid = currentGrid;
+        this.Grid = Grid;
+        this.Grid = Grid;
         B = 0; CP = 0; CB = 0; GB = 0;
     }
     public void SimulateMove(Color ball, int x, Rotation rot)
@@ -196,82 +268,92 @@ class Simulate
         switch (rot)
         {
             case Rotation.Down:
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
                 ++HeightBalls[x];
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
                 ++HeightBalls[x];
                 break;
             case Rotation.Up:
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
                 ++HeightBalls[x];
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.b + '0');
                 ++HeightBalls[x];
                 break;
             case Rotation.Left:
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
                 ++HeightBalls[x];
-                currentGrid[COLUMNS - 1 - HeightBalls[x - 1], x - 1] = (char)(ball.b + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x - 1], x - 1] = (char)(ball.b + '0');
                 ++HeightBalls[x - 1];
                 break;
             case Rotation.Right:
-                currentGrid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x], x] = (char)(ball.a + '0');
                 ++HeightBalls[x];
-                currentGrid[COLUMNS - 1 - HeightBalls[x + 1], x + 1] = (char)(ball.b + '0');
+                Grid[COLUMNS - 1 - HeightBalls[x + 1], x + 1] = (char)(ball.b + '0');
                 ++HeightBalls[x + 1];
                 break;
         }
-        Console.WriteLine("IsNeedDestroy=" + IsNeedDestroy(x, COLUMNS -  HeightBalls[x]));
+        Destroy(x, COLUMNS-HeightBalls[x]);
     }
     void FallCurrentBall(int x,int y)
     {
-        currentGrid[COLUMNS - HeightBalls[x], x] = currentGrid[y, x];
-        currentGrid[y, x] = '.';
+        Grid[COLUMNS - HeightBalls[x], x] = Grid[y, x];
+        Grid[y, x] = '.';
     }
-    bool IsNeedDestroy(int x,int y)
+    public void Destroy(int x,int y)
     {
-        char selectedColor = currentGrid[y, x];
-        if (selectedColor == '.')
+        char currentColor = Grid[y, x];
+        if (currentColor == '.')
         {
             for (int i = 0; i < 30; ++i)
                 Console.Error.WriteLine("ERROR: in IsNeedDestroy selectedColor is '.'");
             Console.Error.WriteLine("y=" + y + " x=" + x);
         }
         bool[,] used = new bool[COLUMNS, ROWS];
+        MyStack<int> flyingBallsX = new MyStack<int>();
+        MyStack<Coor> willDestroyed=new MyStack<Coor>();
         MyStack<Coor> way = new MyStack<Coor>();
-        way.Push(new Coor(x, y));
+        way.Add(new Coor(x, y));
         int count = 0;
         while (!way.IsEmpty())
         {
-            Coor cur = way.Pop();
-            if (used[cur.y, cur.x]) continue;
-            used[cur.y, cur.x] = true;
+            willDestroyed.Add(way.Last());
+            if (used[way.Last().y, way.Last().x]) { way.Pop(); continue; }
+            used[way.Last().y, way.Last().x] = true;
             ++count;
-            if (count >= 4) return true;
-            if (cur.y + 1 < COLUMNS && !used[cur.y + 1, cur.x] && currentGrid[cur.y+1,cur.x]==selectedColor)
-                way.Push(new Coor(cur.x, cur.y + 1));
+            if (way.Last().y + 1 < COLUMNS && !used[way.Last().y + 1, way.Last().x] && Grid[way.Last().y+1,way.Last().x]==currentColor)
+                way.Add(new Coor(way.Last().x, way.Last().y + 1));
 
-            if (cur.y - 1 >= 0 && !used[cur.y - 1, cur.x] && currentGrid[cur.y-1,cur.x]==selectedColor)
-                way.Push(new Coor(cur.x, cur.y - 1));
+            if (way.Last().y - 1 >= 0 && !used[way.Last().y - 1, way.Last().x] && Grid[way.Last().y-1,way.Last().x]==currentColor)
+                way.Add(new Coor(way.Last().x, way.Last().y - 1));
 
-            if (cur.x + 1 < ROWS && !used[cur.y, cur.x + 1] && currentGrid[cur.y,cur.x+1]==selectedColor)
-                way.Push(new Coor(cur.x + 1, cur.y));
+            if (way.Last().x + 1 < ROWS && !used[way.Last().y, way.Last().x + 1] && Grid[way.Last().y,way.Last().x+1]==currentColor)
+                way.Add(new Coor(way.Last().x + 1, way.Last().y));
 
-            if (cur.x - 1 >= 0 && !used[cur.y, cur.x - 1] && currentGrid[cur.y,cur.x-1]==selectedColor)
-                way.Push(new Coor(cur.x - 1, cur.y));
+            if (way.Last().x - 1 >= 0 && !used[way.Last().y, way.Last().x - 1] && Grid[way.Last().y,way.Last().x-1]==currentColor)
+                way.Add(new Coor(way.Last().x - 1, way.Last().y));
+            way.Pop();
         }
-        return false;
+        Console.WriteLine(count);
+        if (count < 4) return;
+        while(!willDestroyed.IsEmpty())
+        {
+            Grid[willDestroyed.Last().y, willDestroyed.Last().x] = '.';
+            --HeightBalls[willDestroyed.Last().x];
+            if(Grid[willDestroyed.Last().y-1,willDestroyed.Last().x]!='.' && Grid[willDestroyed.Last().y-1,willDestroyed.Last().x]!=currentColor)
+            {
+                flyingBallsX.Add(x);
+            }
+            willDestroyed.Pop();
+        }
     }
-    void Destroy(int x,int y)
-    {
-    }
-    public void ShowInformation()
+    public override void ShowInformation()
     {
 
         Console.Error.WriteLine("Simulate");
         for (int i = 0; i < COLUMNS; ++i)
         {
             for (int j = 0; j < ROWS; ++j)
-                Console.Error.Write(currentGrid[i, j] + " ");
+                Console.Error.Write(Grid[i, j] + " ");
             Console.Error.WriteLine();
         }
         Console.Error.Write("HeightBalls:");
@@ -286,12 +368,24 @@ class Program
 {
     static void Main()
     {
-        Player me = new Player();
+        /*Player me = new Player();
         Player enemy = new Player(me.NextBalls);
         me.UpdateInput();
         me.ShowInformation();
         Simulate analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
         analize.SimulateMove(me.NextBalls[0], 3, Rotation.Right);
-        analize.ShowInformation();
+        analize.Destroy(0, 11);
+        analize.ShowInformation();*/
+        MyQueue<int> a=new MyQueue<int>(1);
+        a.Add(10);
+        a.Add(20);
+        a.Add(30);
+        a.Add(40);
+        while (!a.IsEmpty())
+        {
+            Console.WriteLine(a.GetFront());
+            a.PopFront();
+        }
+
     }
 }
