@@ -157,9 +157,14 @@ class MyQueue<T>
 
 enum Rotation { Right,Up,Left,Down};
 
+static class Constants
+{
+    public const int Rows = 6, Columns = 12;
+}
+
 abstract class BaseInformation
 {
-    public const int ROWS = 6, COLUMNS = 12;
+    public const int NULL=-1;
     protected char[,] Grid;
     protected int[] HeightBalls;
 
@@ -175,9 +180,9 @@ class Player : BaseInformation
     public int Score { get; private set; }
 
     public Player(Color[] NextBalls=null){
-        HeightBalls = new int[ROWS];
+        HeightBalls = new int[Constants.Rows];
         Score = 0;
-        Grid = new char[COLUMNS,ROWS];
+        Grid = new char[Constants.Columns,Constants.Rows];
         if (NextBalls == null)
         {
             isKnownNextBalls = false;
@@ -192,7 +197,7 @@ class Player : BaseInformation
 
     public void UpdateInput()
     {
-        for (int i = 0; i < ROWS; ++i)
+        for (int i = 0; i < Constants.Rows; ++i)
             HeightBalls[i] = 0;
         if (!isKnownNextBalls)
             for (int i = 0; i < 8; i++)
@@ -201,13 +206,13 @@ class Player : BaseInformation
                 NextBalls[i].ChangeColor(int.Parse(temp[0]), int.Parse(temp[1]));
             }
         Score = int.Parse(Console.ReadLine());
-        for (int i = 0; i < COLUMNS; ++i)
+        for (int i = 0; i < Constants.Columns; ++i)
         {
             string s = Console.ReadLine();
-            for (int j = 0; j < ROWS; ++j)
+            for (int j = 0; j < Constants.Rows; ++j)
             {
                 Grid[i, j] = s[j];
-                if (HeightBalls[j] == 0 && Grid[i, j] != '.') HeightBalls[j] = COLUMNS - i;
+                if (HeightBalls[j] == 0 && Grid[i, j] != '.') HeightBalls[j] =Constants.Columns - i;
             }
         }
     }
@@ -225,25 +230,25 @@ class Player : BaseInformation
             Console.Error.Write(el + " ");
         Console.Error.WriteLine();
 
-        for (int i = 0; i < COLUMNS; ++i)
+        for (int i = 0; i < Constants.Columns; ++i)
         {
-            for (int j = 0; j < ROWS; ++j)
+            for (int j = 0; j < Constants.Rows; ++j)
                 Console.Error.Write(Grid[i, j] + " ");
             Console.Error.WriteLine();
         }
     }
     public char[,] GetGridCopy()
     {
-        char[,] retGrid=new char[COLUMNS,ROWS];
-        for (int i = 0; i < COLUMNS; ++i)
-            for (int j = 0; j < ROWS; ++j)
+        char[,] retGrid=new char[Constants.Columns,Constants.Rows];
+        for (int i = 0; i < Constants.Columns; ++i)
+            for (int j = 0; j < Constants.Rows; ++j)
                 retGrid[i, j] = Grid[i, j];
         return retGrid;
     }
 
     public int[] GetHeightBallsCopy()
     {
-        int[] retHeightBalls = new int[ROWS];
+        int[] retHeightBalls = new int[Constants.Rows];
         HeightBalls.CopyTo(retHeightBalls, 0);
         return retHeightBalls;
     }
@@ -256,16 +261,21 @@ class Player : BaseInformation
 class Simulate : BaseInformation
 {
     int B, CP, CB, GB;
+    int[] lyingBalls;
+
     public Simulate(char[,] Grid,int[] HeightBalls)
     {
         this.HeightBalls = HeightBalls;
         this.Grid = Grid;
         this.Grid = Grid;
         B = 0; CP = 0; CB = 0; GB = 0;
+        lyingBalls = new int[Constants.Rows];
+        for (int i = 0; i < Constants.Rows; ++i)
+            lyingBalls[i] = HeightBalls[i];
     }
     public void SimulateMove(Color ball, int posX, Rotation rot)
     {
-        if (posX == 0 && rot == Rotation.Left || posX == ROWS - 1 && rot == Rotation.Right)
+        if (posX == 0 && rot == Rotation.Left || posX == Constants.Rows - 1 && rot == Rotation.Right)
         {
             Console.Error.WriteLine("A ball isn't in the Grid");
             return;
@@ -273,54 +283,70 @@ class Simulate : BaseInformation
         switch (rot)
         {
             case Rotation.Down:
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
                 ++HeightBalls[posX];
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
-                if (Grid[COLUMNS - HeightBalls[posX] - 1, posX] != Grid[HeightBalls[posX], posX])
-                    DestroyAndFall(posX, COLUMNS - HeightBalls[posX] - 1);
+                if (Grid[Constants.Columns - HeightBalls[posX] - 1, posX] != Grid[HeightBalls[posX], posX])
+                    DestroyAndFall(posX, Constants.Columns - HeightBalls[posX] - 1);
                 break;
             case Rotation.Up:
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
                 ++HeightBalls[posX];
-                if (Grid[COLUMNS - HeightBalls[posX] + 1, posX] != Grid[HeightBalls[posX], posX])
-                    DestroyAndFall(posX, COLUMNS - HeightBalls[posX]);
+                if (Grid[Constants.Columns - HeightBalls[posX] + 1, posX] != Grid[HeightBalls[posX], posX])
+                    DestroyAndFall(posX, Constants.Columns - HeightBalls[posX]);
                 break;
             case Rotation.Left:
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
-                Grid[COLUMNS - 1 - HeightBalls[posX - 1], posX - 1] = (char)(ball.b + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX - 1], posX - 1] = (char)(ball.b + '0');
                 ++HeightBalls[posX - 1];
-                if (Grid[COLUMNS - HeightBalls[posX - 1], posX - 1] != Grid[COLUMNS - HeightBalls[posX], posX] || HeightBalls[posX - 1] != HeightBalls[posX])
-                    DestroyAndFall(posX - 1, COLUMNS - HeightBalls[posX - 1]);
+                if (Grid[Constants.Columns - HeightBalls[posX - 1], posX - 1] != Grid[Constants.Columns - HeightBalls[posX], posX] || HeightBalls[posX - 1] != HeightBalls[posX])
+                    DestroyAndFall(posX - 1, Constants.Columns - HeightBalls[posX - 1]);
                 break;
             case Rotation.Right:
-                Grid[COLUMNS - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
-                Grid[COLUMNS - 1 - HeightBalls[posX + 1], posX + 1] = (char)(ball.b + '0');
+                Grid[Constants.Columns - 1 - HeightBalls[posX + 1], posX + 1] = (char)(ball.b + '0');
                 ++HeightBalls[posX + 1];
-                if (Grid[COLUMNS - HeightBalls[posX + 1], posX + 1] != Grid[HeightBalls[posX], posX] || HeightBalls[posX + 1] != HeightBalls[posX])
-                    DestroyAndFall(posX + 1, COLUMNS - HeightBalls[posX + 1]);
+                if (Grid[Constants.Columns - HeightBalls[posX + 1], posX + 1] != Grid[HeightBalls[posX], posX] || HeightBalls[posX + 1] != HeightBalls[posX])
+                    DestroyAndFall(posX + 1, Constants.Columns - HeightBalls[posX + 1]);
                 break;
         }
-        DestroyAndFall(posX, COLUMNS-HeightBalls[posX]);
+        DestroyAndFall(posX, Constants.Columns-HeightBalls[posX]);
     }
-    void FallCurrentBall(int x,int y)
+    void Fall(int x,int y)
     {
-        Grid[COLUMNS - HeightBalls[x], x] = Grid[y, x];
+        Grid[Constants.Columns - HeightBalls[x], x] = Grid[y, x];
         Grid[y, x] = '.';
     }
+/*    void Fall(int [] lyingBalls)
+    {
+        for(int i=0;i<Constants.Rows;++i)
+        {
+            bool isFlyingBalls = false;
+            if (lyingBalls[i] == NULL) continue;
+            for(int j=0;j<Constants.Columns && lyingBalls[i]!=HeightBalls[i];++j)
+            {
+                if (Grid[i, j] == '.')
+                {
+                    isFlyingBalls = true;
+                    continue;
+                }
+                if(Grid[j,i]!='.' && isFlyingBalls)
+                {
+                    Grid[lyingBalls[],i]
+                }
+            }
+        }
+    }*/
     public void DestroyAndFall(int x,int y)
     {
+        if (y == Constants.Columns || Grid[y, x] == '.') return;
         char currentColor = Grid[y, x];
-        if (currentColor == '.')
-        {
-            return;
-        }
-        bool[,] used = new bool[COLUMNS, ROWS];
-        MyQueue<int> flyingBallsX = new MyQueue<int>();
+        bool[,] used = new bool[Constants.Columns, Constants.Rows];
         MyQueue<Coor> willDestroyed=new MyQueue<Coor>();
         MyQueue<Coor> way = new MyQueue<Coor>();
         way.Add(new Coor(x, y));
@@ -330,7 +356,7 @@ class Simulate : BaseInformation
         {
             willDestroyed.Add(way.Get());
             ++count;
-            if (way.Get().y + 1 < COLUMNS && !used[way.Get().y + 1, way.Get().x] && Grid[way.Get().y + 1, way.Get().x] == currentColor)
+            if (way.Get().y + 1 < Constants.Columns && !used[way.Get().y + 1, way.Get().x] && Grid[way.Get().y + 1, way.Get().x] == currentColor)
             {
                 used[way.Get().y + 1, way.Get().x] = true;
                 way.Add(new Coor(way.Get().x, way.Get().y + 1));
@@ -342,7 +368,7 @@ class Simulate : BaseInformation
                 way.Add(new Coor(way.Get().x, way.Get().y - 1));
             }
 
-            if (way.Get().x + 1 < ROWS && !used[way.Get().y, way.Get().x + 1] && Grid[way.Get().y, way.Get().x + 1] == currentColor)
+            if (way.Get().x + 1 < Constants.Rows && !used[way.Get().y, way.Get().x + 1] && Grid[way.Get().y, way.Get().x + 1] == currentColor)
             {
                 used[way.Get().y, way.Get().x + 1] = true;
                 way.Add(new Coor(way.Get().x + 1, way.Get().y));
@@ -355,34 +381,27 @@ class Simulate : BaseInformation
             }
             way.Pop();
         }
-        Console.WriteLine("Count="+count);
+        //Console.WriteLine("Count="+count);
         if (count < 4) return;
         while(!willDestroyed.IsEmpty())
         {
             Grid[willDestroyed.Get().y, willDestroyed.Get().x] = '.';
             --HeightBalls[willDestroyed.Get().x];
-            if (Grid[willDestroyed.Get().y - 1, willDestroyed.Get().x] != '.' && 
-                Grid[willDestroyed.Get().y - 1, willDestroyed.Get().x] != currentColor)
-            {
-                flyingBallsX.Add(willDestroyed.Get().x);
-            }
+   //         --lyingBalls[willDestroyed.Get().x];
+
+            int newLyingBall =  Constants.Columns - willDestroyed.Get().y  - 1 ;
+         //   Console.WriteLine("newLyingBall=" + newLyingBall + " x=" + willDestroyed.Get().x + " y=" + willDestroyed.Get().y +" res=" + newLyingBall);
+            if (newLyingBall < lyingBalls[willDestroyed.Get().x]) lyingBalls[willDestroyed.Get().x] = newLyingBall;
+
             willDestroyed.Pop();
         }
-
-        Console.WriteLine("flyingBalls");
-        while(!flyingBallsX.IsEmpty())
-        {
-            Console.Write(flyingBallsX.Get()+" ");
-            flyingBallsX.Pop();
-        }
-        Console.WriteLine();
-    }
+            }
     public override void ShowInformation()
     {
         Console.Error.WriteLine("Simulate");
-        for (int i = 0; i < COLUMNS; ++i)
+        for (int i = 0; i < Constants.Columns; ++i)
         {
-            for (int j = 0; j < ROWS; ++j)
+            for (int j = 0; j < Constants.Rows; ++j)
                 Console.Error.Write(Grid[i, j] + " ");
             Console.Error.WriteLine();
         }
@@ -390,6 +409,11 @@ class Simulate : BaseInformation
         foreach (var el in HeightBalls)
             Console.Error.Write(el + " ");
         Console.Error.WriteLine();
+        Console.Write("LyingBalls: ");
+        foreach (var t in lyingBalls)
+            Console.Write(t + " ");
+        Console.WriteLine();
+
     }
 }
 
@@ -403,7 +427,7 @@ class Program
         me.UpdateInput();
         me.ShowInformation();
         Simulate analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
-        analize.SimulateMove(me.NextBalls[0], 1, Rotation.Left);
+        analize.SimulateMove(me.NextBalls[0], 1, Rotation.Up);
         analize.ShowInformation();
         /*
         MyQueue<int> a=new MyQueue<int>(1);
