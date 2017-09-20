@@ -39,12 +39,7 @@ class MyStack<T>
         index = 0;
         stack = new T[Length];
     }
-    public MyStack()
-    {
-        Length = 10;
-        index = 0;
-        stack = new T[Length];
-    }
+    public MyStack() : this(10) { }
     void IncreaseStack()
     {
         T[] newStack = new T[Length * 2];
@@ -159,7 +154,7 @@ enum Rotation { Right,Up,Left,Down};
 
 static class Constants
 {
-    public const int Rows = 6, Columns = 12;
+    public const int Rows = 6, Columns = 12, CountColors=6;
 }
 
 abstract class BaseInformation
@@ -175,11 +170,13 @@ abstract class BaseInformation
 
 class Player : BaseInformation
 {
+    Random rand;
     private bool isKnownNextBalls;
     public Color[] NextBalls { get; private set; }
     public int Score { get; private set; }
 
     public Player(Color[] NextBalls=null){
+        rand = new Random();
         HeightBalls = new int[Constants.Rows];
         Score = 0;
         Grid = new char[Constants.Columns,Constants.Rows];
@@ -195,6 +192,16 @@ class Player : BaseInformation
         }
     }
 
+    public void StupidMove()
+    {
+        int num;
+        do
+        {
+            num = rand.Next(0, 6);
+        }
+        while (HeightBalls[num] > 10);
+       Console.WriteLine(num + " " + (int)Rotation.Down);
+    }
     public void UpdateInput()
     {
         for (int i = 0; i < Constants.Rows; ++i)
@@ -262,27 +269,35 @@ class Simulate : BaseInformation
 {
     int B, CP, CB, GB;
     int[] lyingBalls;
+    bool[] isThisColorDestroyed;
 
     public Simulate(char[,] Grid,int[] HeightBalls)
     {
         this.HeightBalls = HeightBalls;
         this.Grid = Grid;
         this.Grid = Grid;
+        isThisColorDestroyed = new bool[Constants.CountColors];
         B = 0; CP = 0; CB = 0; GB = 0;
         lyingBalls = new int[Constants.Rows];
         for (int i = 0; i < Constants.Rows; ++i)
             lyingBalls[i] = HeightBalls[i];
     }
+    public int Score()
+    {
+        return B;
+    }
     public void SimulateMove(Color ball, int posX, Rotation rot)
     {
         if (posX == 0 && rot == Rotation.Left || posX == Constants.Rows - 1 && rot == Rotation.Right)
         {
-            Console.Error.WriteLine("A ball isn't in the Grid");
+            for(int i=0;i<50;++i)
+                Console.Error.WriteLine("A ball isn't in the Grid");
             return;
         }
         switch (rot)
         {
             case Rotation.Down:
+                if (Constants.Columns - 3 - HeightBalls[posX] < 0) break;//костыль
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
                 ++HeightBalls[posX];
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
@@ -317,37 +332,40 @@ class Simulate : BaseInformation
         }
         DestroyAndFall(posX, Constants.Columns-HeightBalls[posX]);
     }
-    void Fall(int x,int y)
+   
+    void Fall()
     {
-        Grid[Constants.Columns - HeightBalls[x], x] = Grid[y, x];
-        Grid[y, x] = '.';
-    }
-/*    void Fall(int [] lyingBalls)
-    {
-        for(int i=0;i<Constants.Rows;++i)
+        MyQueue<Coor> needCheck = new MyQueue<Coor>();
+        for (int i = 0; i < Constants.Rows; ++i)
         {
-            bool isFlyingBalls = false;
-            if (lyingBalls[i] == NULL) continue;
-            for(int j=0;j<Constants.Columns && lyingBalls[i]!=HeightBalls[i];++j)
+            if (HeightBalls[i] == lyingBalls[i]) continue;
+            for (int j = Constants.Columns-2-lyingBalls[i]; j>=0; --j)
             {
-                if (Grid[i, j] == '.')
+                if(Grid[j,i]!='.')
                 {
-                    isFlyingBalls = true;
-                    continue;
-                }
-                if(Grid[j,i]!='.' && isFlyingBalls)
-                {
-                    Grid[lyingBalls[],i]
+                    Grid[Constants.Columns - lyingBalls[i] - 1,i] = Grid[j, i];
+                    Grid[j, i] = '.';
+                    ++lyingBalls[i];
+                    if (Grid[Constants.Columns - lyingBalls[i], i] == '.') for (int g = 0; g < 30; ++g) Console.WriteLine("ERROR IN FUNCTION FALL. FUNCTION IS GOINT TO DELETE '.'");
+                    if(Grid[Constants.Columns-lyingBalls[i],i]!='0')
+                        needCheck.Add(new Coor(i,Constants.Columns-lyingBalls[i]));
                 }
             }
         }
-    }*/
-    public void DestroyAndFall(int x,int y)
+        while (!needCheck.IsEmpty())
+        {
+            DestroyAndFall(needCheck.Get().x, needCheck.Get().y);
+            needCheck.Pop();
+        }
+    }
+    void DestroyAndFall(int x, int y)
     {
-        if (y == Constants.Columns || Grid[y, x] == '.') return;
+        if (y == Constants.Columns || Grid[y, x] == '.' || Grid[y,x]=='0') return;
+        //Console.WriteLine("y=" + y + " x=" + x);
+        isThisColorDestroyed[Grid[y, x] - '0'] = true;
         char currentColor = Grid[y, x];
         bool[,] used = new bool[Constants.Columns, Constants.Rows];
-        MyQueue<Coor> willDestroyed=new MyQueue<Coor>();
+        MyQueue<Coor> willDestroyed = new MyQueue<Coor>();
         MyQueue<Coor> way = new MyQueue<Coor>();
         way.Add(new Coor(x, y));
         used[way.Get().y, way.Get().x] = true; ;
@@ -383,19 +401,19 @@ class Simulate : BaseInformation
         }
         //Console.WriteLine("Count="+count);
         if (count < 4) return;
-        while(!willDestroyed.IsEmpty())
+        while (!willDestroyed.IsEmpty())
         {
             Grid[willDestroyed.Get().y, willDestroyed.Get().x] = '.';
             --HeightBalls[willDestroyed.Get().x];
-   //         --lyingBalls[willDestroyed.Get().x];
-
-            int newLyingBall =  Constants.Columns - willDestroyed.Get().y  - 1 ;
-         //   Console.WriteLine("newLyingBall=" + newLyingBall + " x=" + willDestroyed.Get().x + " y=" + willDestroyed.Get().y +" res=" + newLyingBall);
+            ++B;
+            int newLyingBall = Constants.Columns - willDestroyed.Get().y - 1;
+            //   Console.WriteLine("newLyingBall=" + newLyingBall + " x=" + willDestroyed.Get().x + " y=" + willDestroyed.Get().y +" res=" + newLyingBall);
             if (newLyingBall < lyingBalls[willDestroyed.Get().x]) lyingBalls[willDestroyed.Get().x] = newLyingBall;
 
             willDestroyed.Pop();
         }
-            }
+        Fall();
+    }
     public override void ShowInformation()
     {
         Console.Error.WriteLine("Simulate");
@@ -409,11 +427,10 @@ class Simulate : BaseInformation
         foreach (var el in HeightBalls)
             Console.Error.Write(el + " ");
         Console.Error.WriteLine();
-        Console.Write("LyingBalls: ");
+        Console.Error.Write("LyingBalls: ");
         foreach (var t in lyingBalls)
-            Console.Write(t + " ");
-        Console.WriteLine();
-
+            Console.Error.Write(t + " ");
+        Console.Error.WriteLine();
     }
 }
 
@@ -424,22 +441,28 @@ class Program
     {
         Player me = new Player();
         Player enemy = new Player(me.NextBalls);
-        me.UpdateInput();
-        me.ShowInformation();
-        Simulate analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
-        analize.SimulateMove(me.NextBalls[0], 1, Rotation.Up);
-        analize.ShowInformation();
-        /*
-        MyQueue<int> a=new MyQueue<int>(1);
-        a.Add(10);
-        a.Add(20);
-        a.Add(30);
-        a.Add(40);
-        while (!a.IsEmpty())
+        Simulate analize;
+        while (true)
         {
-            Console.WriteLine(a.Get());
-            a.Pop();
+            me.UpdateInput();
+            enemy.UpdateInput();
+            me.ShowInformation();
+            analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
+            bool done = false;
+            for (int i = 0; i < Constants.Rows && !done; ++i)
+            {
+                analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
+                analize.SimulateMove(me.NextBalls[0], i, Rotation.Down);
+                if (analize.Score() > 4)
+                {
+                    Console.WriteLine(i + " " + Rotation.Down);
+                    done = true;
+                }
+            }
+            if(!done)
+            {
+                me.StupidMove();
+            }
         }
-        */
     }
 }
