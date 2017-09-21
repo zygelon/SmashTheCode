@@ -159,24 +159,34 @@ static class Constants
 
 abstract class BaseInformation
 {
-    public const int NULL=-1;
     protected char[,] Grid;
     protected int[] HeightBalls;
 
     protected BaseInformation() { }
-    public abstract void ShowInformation();
+    public char[,] GetGridCopy()
+    {
+        char[,] retGrid = new char[Constants.Columns, Constants.Rows];
+        for (int i = 0; i < Constants.Columns; ++i)
+            for (int j = 0; j < Constants.Rows; ++j)
+                retGrid[i, j] = Grid[i, j];
+        return retGrid;
+    }
+    public int[] GetHeightBallsCopy()
+    {
+        int[] retHeightBalls = new int[Constants.Rows];
+        HeightBalls.CopyTo(retHeightBalls, 0);
+        return retHeightBalls;
+    }
 }
 
 
 class Player : BaseInformation
 {
-    Random rand;
     private bool isKnownNextBalls;
     public Color[] NextBalls { get; private set; }
     public int Score { get; private set; }
 
     public Player(Color[] NextBalls=null){
-        rand = new Random();
         HeightBalls = new int[Constants.Rows];
         Score = 0;
         Grid = new char[Constants.Columns,Constants.Rows];
@@ -192,16 +202,7 @@ class Player : BaseInformation
         }
     }
 
-    public void StupidMove()
-    {
-        int num;
-        do
-        {
-            num = rand.Next(0, 6);
-        }
-        while (HeightBalls[num] > 10);
-       Console.WriteLine(num + " " + (int)Rotation.Down);
-    }
+    
     public void UpdateInput()
     {
         for (int i = 0; i < Constants.Rows; ++i)
@@ -223,7 +224,7 @@ class Player : BaseInformation
             }
         }
     }
-    public override void ShowInformation()
+    public void ShowInformation()
     {
         Console.Error.Write("Balls:");
         foreach (var t in NextBalls)
@@ -244,21 +245,8 @@ class Player : BaseInformation
             Console.Error.WriteLine();
         }
     }
-    public char[,] GetGridCopy()
-    {
-        char[,] retGrid=new char[Constants.Columns,Constants.Rows];
-        for (int i = 0; i < Constants.Columns; ++i)
-            for (int j = 0; j < Constants.Rows; ++j)
-                retGrid[i, j] = Grid[i, j];
-        return retGrid;
-    }
-
-    public int[] GetHeightBallsCopy()
-    {
-        int[] retHeightBalls = new int[Constants.Rows];
-        HeightBalls.CopyTo(retHeightBalls, 0);
-        return retHeightBalls;
-    }
+    
+    
 }
     //b - ощичено блоков за этот ход, cp=chain power
     //CP is the chain power, starting at 0 for the first step. It is worth 8 for the second step and for each following step it is worth twice as much as the previous step.
@@ -286,6 +274,14 @@ class Simulate : BaseInformation
     {
         return B;
     }
+    public bool CanMove(int posX, Rotation rot)
+    {
+        if ((rot == Rotation.Down || rot == Rotation.Up) && HeightBalls[posX] >= Constants.Columns - 1
+             || rot == Rotation.Left && (posX == 0 || HeightBalls[posX] == Constants.Columns || HeightBalls[posX - 1] == Constants.Columns)
+             || rot == Rotation.Right && (posX == Constants.Rows - 1 || HeightBalls[posX] == Constants.Columns || HeightBalls[posX + 1] == Constants.Columns))
+            return false;
+        else return true;
+    }
     public void SimulateMove(Color ball, int posX, Rotation rot)
     {
         if (posX == 0 && rot == Rotation.Left || posX == Constants.Rows - 1 && rot == Rotation.Right)
@@ -297,7 +293,7 @@ class Simulate : BaseInformation
         switch (rot)
         {
             case Rotation.Down:
-                if (Constants.Columns - 3 - HeightBalls[posX] < 0) break;//костыль
+                if (Constants.Columns - 3 - HeightBalls[posX] < 0) return;//Не проиграю ли
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
                 ++HeightBalls[posX];
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
@@ -306,6 +302,7 @@ class Simulate : BaseInformation
                     DestroyAndFall(posX, Constants.Columns - HeightBalls[posX] - 1);
                 break;
             case Rotation.Up:
+                if (Constants.Columns - 3 - HeightBalls[posX] < 0) return;//Не проиграю ли
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.b + '0');
@@ -314,6 +311,7 @@ class Simulate : BaseInformation
                     DestroyAndFall(posX, Constants.Columns - HeightBalls[posX]);
                 break;
             case Rotation.Left:
+                if (Constants.Columns - 2 - HeightBalls[posX] < 0 || Constants.Columns - 2 - HeightBalls[posX - 1] < 0) return;//Не проиграю ли
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
                 Grid[Constants.Columns - 1 - HeightBalls[posX - 1], posX - 1] = (char)(ball.b + '0');
@@ -322,6 +320,7 @@ class Simulate : BaseInformation
                     DestroyAndFall(posX - 1, Constants.Columns - HeightBalls[posX - 1]);
                 break;
             case Rotation.Right:
+                if (Constants.Columns - 2 - HeightBalls[posX] < 0 || Constants.Columns - 2 - HeightBalls[posX + 1] < 0) return;//Не проиграю ли
                 Grid[Constants.Columns - 1 - HeightBalls[posX], posX] = (char)(ball.a + '0');
                 ++HeightBalls[posX];
                 Grid[Constants.Columns - 1 - HeightBalls[posX + 1], posX + 1] = (char)(ball.b + '0');
@@ -406,15 +405,34 @@ class Simulate : BaseInformation
             Grid[willDestroyed.Get().y, willDestroyed.Get().x] = '.';
             --HeightBalls[willDestroyed.Get().x];
             ++B;
-            int newLyingBall = Constants.Columns - willDestroyed.Get().y - 1;
-            //   Console.WriteLine("newLyingBall=" + newLyingBall + " x=" + willDestroyed.Get().x + " y=" + willDestroyed.Get().y +" res=" + newLyingBall);
-            if (newLyingBall < lyingBalls[willDestroyed.Get().x]) lyingBalls[willDestroyed.Get().x] = newLyingBall;
+            if (willDestroyed.Get().y - 1 >= 0 && Grid[willDestroyed.Get().y - 1, willDestroyed.Get().x] == '0')//Уничтожение черепов
+            {
+                Grid[willDestroyed.Get().y - 1, willDestroyed.Get().x] = '.';
+                --HeightBalls[willDestroyed.Get().x];
+            }
+            if (willDestroyed.Get().y + 1 < Constants.Columns && Grid[willDestroyed.Get().y + 1, willDestroyed.Get().x] == '0')
+            {
+                Grid[willDestroyed.Get().y + 1, willDestroyed.Get().x] = '.';
+                --HeightBalls[willDestroyed.Get().x];
+            }
+            if (willDestroyed.Get().x - 1 >= 0 && Grid[willDestroyed.Get().y, willDestroyed.Get().x - 1] == '0')
+            {
+                Grid[willDestroyed.Get().y, willDestroyed.Get().x - 1] = '.';
+                --HeightBalls[willDestroyed.Get().x - 1];
+            }
+            if (willDestroyed.Get().x + 1 < Constants.Rows && Grid[willDestroyed.Get().y, willDestroyed.Get().x + 1] == '0')
+            {
+                Grid[willDestroyed.Get().y, willDestroyed.Get().x + 1] = '.';
+                --HeightBalls[willDestroyed.Get().x+1];
+            }
+            if (Constants.Columns - willDestroyed.Get().y - 1 < lyingBalls[willDestroyed.Get().x])
+                lyingBalls[willDestroyed.Get().x] = Constants.Columns - willDestroyed.Get().y - 1;
 
             willDestroyed.Pop();
         }
         Fall();
     }
-    public override void ShowInformation()
+    public void ShowInformation()
     {
         Console.Error.WriteLine("Simulate");
         for (int i = 0; i < Constants.Columns; ++i)
@@ -434,6 +452,75 @@ class Simulate : BaseInformation
     }
 }
 
+class Calculation : BaseInformation
+{
+    int deep;
+    Random rand;
+    //int score;
+    int c = 0;
+    int[] bestMove = new int[2];
+    readonly Player player;
+    //Simulate StartPos;
+    //Simulate StartPos;
+    public Calculation(Player player) : this(player,3) { }
+    public Calculation(Player player,int deep)
+    {
+     //   StartPos = new Simulate(player.GetGridCopy(), player.GetHeightBallsCopy());
+
+        this.player = player;
+        rand = new Random();
+        if (deep > 0 && deep < 9)
+            this.deep = deep;
+        else
+        {
+            this.deep = 2;
+            Console.Error.WriteLine("DEEP ERROR");
+        }
+    }
+    /*
+    public void StupidMove()
+    {
+        StartPos = new Simulate(player.GetGridCopy(), player.GetHeightBallsCopy());
+        do
+        {
+            bestMove[0] = rand.Next(0, 6);
+            bestMove[1] = rand.Next(0, 4);
+        } while (! StartPos.CanMove(bestMove[0], (Rotation)bestMove[1]));
+        for (int i = 0; i < 6; ++i)
+            Console.Error.Write(player.GetHeightBallsCopy()[i]+ " " );
+        Console.Error.WriteLine();
+    }*/
+    public int FindBestMove(Simulate currentPosition,  int score=0,int currentDeep=0)
+    {
+        c += 1;
+        if (currentDeep == deep) return score;
+        int biggestScore = score;
+        for (int rot = 0; rot < 4; ++rot)
+            for (int i = 0; i < Constants.Rows; ++i)
+            {
+                if (!currentPosition.CanMove(i, (Rotation)rot)) continue;
+                Simulate newPosition = new Simulate(currentPosition.GetGridCopy(), currentPosition.GetHeightBallsCopy());
+                newPosition.SimulateMove(player.NextBalls[currentDeep], i, (Rotation)rot);
+                int tempScore=FindBestMove(newPosition, newPosition.Score() + score, currentDeep + 1);
+                if (currentDeep == 0 && tempScore > biggestScore)
+                {
+                    biggestScore = tempScore;
+                    //this.score = biggestScore;
+                    bestMove[0] = i;
+                    bestMove[1] = rot;
+                }
+            }
+        
+        return biggestScore;
+    }
+    public int[] GetNextMove()
+    {
+        //if (score == 0 && bestMove[0] == 0 && bestMove[1] == 0) StupidMove();
+        Console.Error.WriteLine(c);
+        c = 0;
+        return bestMove;
+    }
+}
 
 class Program
 {
@@ -441,28 +528,14 @@ class Program
     {
         Player me = new Player();
         Player enemy = new Player(me.NextBalls);
-        Simulate analize;
+        Calculation AI = new Calculation(me);
         while (true)
         {
             me.UpdateInput();
             enemy.UpdateInput();
-            me.ShowInformation();
-            analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
-            bool done = false;
-            for (int i = 0; i < Constants.Rows && !done; ++i)
-            {
-                analize = new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy());
-                analize.SimulateMove(me.NextBalls[0], i, Rotation.Down);
-                if (analize.Score() > 4)
-                {
-                    Console.WriteLine(i + " " + Rotation.Down);
-                    done = true;
-                }
-            }
-            if(!done)
-            {
-                me.StupidMove();
-            }
+        //    me.ShowInformation();
+            AI.FindBestMove(new Simulate(me.GetGridCopy(), me.GetHeightBallsCopy()));
+            Console.WriteLine(AI.GetNextMove()[0] + " " + AI.GetNextMove()[1]);
         }
     }
 }
